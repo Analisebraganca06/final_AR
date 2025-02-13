@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+    <link rel='icon' type='image/png' sizes='32x32' href='favicon-32x32.png'>
+    <link rel='stylesheet' href='css/common.css'>
+
+    <title>Interactive AR</title>
+  </head>
+  <body>
+    <header>
+      <details open>
+        <summary>Interactive AR</summary>
+        <p>
+          This sample allows resizing and rotating a static 3D model in AR.
+          <a class="back" href="./">Back</a>
+        </p>
+      </details>
+    </header>
+    
+    <script type="module">
+      import {WebXRButton} from './js/util/webxr-button.js';
+      import {Scene} from './js/render/scenes/scene.js';
+      import {Renderer, createWebGLContext} from './js/render/core/renderer.js';
+      import {Node} from './js/render/core/node.js';
+      import {Gltf2Node} from './js/render/nodes/gltf2.js';
+      import {vec3, mat4, quat} from './js/render/math/gl-matrix.js';
+
+      let xrButton = null;
+      let xrRefSpace = null;
+      let gl = null;
+      let renderer = null;
+      let scene = new Scene();
+      scene.enableStats(false);
+
+      // AR Object
+      let arObject = new Node();
+      scene.addNode(arObject);
+      
+      let model = new Gltf2Node({url: 'media/gltf/viking_room/viking_room.gltf'});
+      vec3.set(model.scale, 0.1, 0.1, 0.1); // Default scale
+      arObject.addNode(model);
+
+      // Set static position
+      let staticPosition = mat4.create();
+      mat4.fromTranslation(staticPosition, [0, 0, -1.5]); // 1.5m in front
+      mat4.copy(arObject.matrix, staticPosition);
+
+      let isDragging = false;
+      let lastX = 0;
+      let scaleFactor = 1.0;
+
+      function initXR() {
+        xrButton = new WebXRButton({
+          onRequestSession: onRequestSession,
+          onEndSession: onEndSession,
+          textEnterXRTitle: "START AR",
+          textXRNotFoundTitle: "AR NOT FOUND",
+          textExitXRTitle: "EXIT AR",
+        });
+
+        document.querySelector('header').appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+            xrButton.enabled = supported;
+          });
+        }
+      }
+
+      function onRequestSession() {
+        return navigator.xr.requestSession('immersive-ar', {requiredFeatures: ['local']})
+          .then((session) => {
+            xrButton.setSession(session);
+            onSessionStarted(session);
+          });
+      }
+
+      function onSessionStarted(session) {
+        session.addEventListener('end', onSessionEnded);
+
+        if (!gl) {
+          gl = createWebGLContext({xrCompatible: true});
+          renderer = new Renderer(gl);
+          scene.setRenderer(renderer);
+        }
+
+        session.updateRenderState({baseLayer: new XRWebGLLayer(session, gl)});
+
+        session.requestReferenceSpace('local').then((refSpace) => {
+          xrRefSpace = refSpace;
+          session.requestAnimationFrame(onXRFrame);
+        });
+
+        setupInteraction();
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded(event) {
+        xrButton.setSession(null);
+      }
+
+      function setupInteraction() {
+        let touchStartDistance = 0;
+        let touchStartScale = scaleFactor;
+
+        window.addEventListener('pointerdown', (event) => {
+          isDragging = true;
+          lastX = event.clientX;
+        });
+
+        window.addEventListener('pointermove', (event) => {
+          if (isDragging) {
+            let deltaX = event.clientX - lastX;
+            lastX = event.clientX;
+
+            // Rotate model left or right
+            let rotationQuat = quat.create();
+            quat.rotateY(rotationQuat, rotationQuat, deltaX * 0.01);
+            mat4.multiply(arObject.matrix, arObject.matrix, mat4.fromQuat(mat4.create(), rotationQuat));
+          }
+        });
+
+        window.addEventListener('pointerup', () => {
+          isDragging = false;
+        });
+
+        window.addEventListener('touchstart', (event) => {
+          if (event.touches.length == 2) {
+            touchStartDistance = getTouchDistance(event.touches);
+            touchStartScale = scaleFactor;
+          }
+        });
+
+        window.addEventListener('touchmove', (event) => {
+          if (event.touches.length == 2) {
+            let currentDistance = getTouchDistance(event.touches);
+            let scaleDelta = currentDistance / touchStartDistance;
+            scaleFactor = Math.max(0.05, Math.min(2.0, touchStartScale * scaleDelta));
+
+            vec3.set(model.scale, scaleFactor, scaleFactor, scaleFactor);
+          }
+        });
+      }
+
+      function getTouchDistance(touches) {
+        let dx = touches[0].clientX - touches[1].clientX;
+        let dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function onXRFrame(t, frame) {
+        let session = frame.session;
+        let pose = frame.getViewerPose(xrRefSpace);
+
+        scene.startFrame();
+        session.requestAnimationFrame(onXRFrame);
+        scene.drawXRFrame(frame, pose);
+        scene.endFrame();
+      }
+
+      initXR();
+    </script>
+  </body>
+</html>

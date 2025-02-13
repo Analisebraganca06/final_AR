@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic AR Model Viewer</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+        }
+        model-viewer {
+            width: 100%;
+            height: 500px;
+            background: #ddd;
+        }
+        .controls {
+            margin: 10px;
+        }
+        #ar-button {
+            background: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #ar-button img {
+            width: 40px;
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Model Viewer -->
+    <model-viewer id="myModel"
+        src="media/gltf/viking_room/viking_room2.gltf"
+        alt="A 3D model"
+        ar 
+        ar-modes="webxr scene-viewer quick-look"
+        auto-rotate
+        camera-controls
+        shadow-intensity="1">
+    </model-viewer>
+
+    <!-- Model Selector -->
+    <div class="controls">
+        <label for="modelSelect">Choose a Model:</label>
+        <select id="modelSelect">
+            <option value="media/gltf/final_model/final.glb">Model 1</option>
+            <option value="media/gltf/viking_room/viking_room1.gltf">Model 2</option>
+            <option value="media/gltf/home-theater/home-theater.gltf">Model 3</option>
+        </select>
+    </div>
+
+    <!-- Custom AR Button -->
+    <!-- <button id="ar-button" onclick="startAR()">
+        <img src="ar-icon.png" alt="Enter AR">
+    </button> -->
+
+    <script>
+        const modelViewer = document.querySelector("#myModel");
+        const modelSelect = document.getElementById("modelSelect");
+
+        // function startAR() {
+        //     modelViewer.activateAR();
+        // }
+
+        // Change Model Dynamically
+        modelSelect.addEventListener("change", (event) => {
+            modelViewer.src = event.target.value;
+        });
+
+    </script>
+
+</body>
+</html>
