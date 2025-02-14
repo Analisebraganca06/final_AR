@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic AR Model Viewer</title>
+    <title>AR Model</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
         body {
@@ -39,10 +39,8 @@
     </style>
 </head>
 <body>
-
-    <!-- Model Viewer -->
     <model-viewer id="myModel"
-        src="media/gltf/viking_room/viking_room2.gltf"
+        src="media/gltf/models/final.glb"
         alt="A 3D model"
         ar 
         ar-modes="webxr scene-viewer quick-look"
@@ -50,31 +48,18 @@
         camera-controls
         shadow-intensity="1">
     </model-viewer>
-
-    <!-- Model Selector -->
     <div class="controls">
         <label for="modelSelect">Choose a Model:</label>
         <select id="modelSelect">
-            <option value="media/gltf/final_model/final.glb">Model 1</option>
-            <option value="media/gltf/viking_room/viking_room1.gltf">Model 2</option>
-            <option value="media/gltf/home-theater/home-theater.gltf">Model 3</option>
+            <option value="media/gltf/models/final.glb">Whole Area</option>
+            <option value="media/gltf/models/single_villa.glb">Villa</option>
+            <option value="media/gltf/models/open_villa.glb">Internal</option>
         </select>
     </div>
-
-    <!-- Custom AR Button -->
-    <!-- <button id="ar-button" onclick="startAR()">
-        <img src="ar-icon.png" alt="Enter AR">
-    </button> -->
 
     <script>
         const modelViewer = document.querySelector("#myModel");
         const modelSelect = document.getElementById("modelSelect");
-
-        // function startAR() {
-        //     modelViewer.activateAR();
-        // }
-
-        // Change Model Dynamically
         modelSelect.addEventListener("change", (event) => {
             modelViewer.src = event.target.value;
         });
